@@ -1,0 +1,4 @@
+.idea/
+*.onnx
+!assets/det_10g.onnx
+*.whl
