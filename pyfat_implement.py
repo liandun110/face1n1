@@ -219,10 +219,6 @@ def select_face(det, mode="combined", img_shape=None, prob_factor=0.8):
                 best_i = i
         return best_i
 
-# 计算边界框的左上角坐标 (x1, y1) 和右下角坐标 (x2, y2)。
-# 如果提供了 max_shape，则对 x1、y1、x2 和 y2 进行限制，确保它们不会超出图像的边界。
-# 返回一个包含 x1、y1、x2 和 y2 的张量，形状为 (n, 4)。
-
 
 # 这段代码定义了一个名为 PyFAT 的类，它用于加载和管理一个基于 ONNX 模型的面部识别系统。
 # 这个类包含了初始化方法 __init__ 和一个 load 方法，用于加载检测模型和特征提取模型。
@@ -258,7 +254,7 @@ class PyFAT:
     # 这段代码是PyFAT类中的load方法，它的作用是加载两个ONNX模型：一个检测模型和一个特征提取模型，并根据模型输出配置类的属性。
     def load(self, assets_path='./assets/', devices=[0]) -> int:
         assets_path = Path(assets_path)
-        rec_model_path = assets_path / '20241112_024744_ep02.onnx'
+        rec_model_path = assets_path / '20241112_024744_ep02.onnx' # TODO 改成1119号模型
         det_model_path = assets_path / 'det_10g.onnx'
         try:
             providers = [
@@ -363,6 +359,9 @@ class PyFAT:
             isS = True
             try:
                 face_image = self._get_faces(image)
+                if face_image is None:
+                    face_image = np.zeros((112, 112, 3), dtype=np.uint8)
+                    isS = False
             except Exception:
                 logger.error('ERROR: det error')
                 isS = False
@@ -380,9 +379,14 @@ class PyFAT:
         )
         net_out = self.model.run(None, {self.model_input_name: blob})[0]
         feat_list = [i for i in net_out]
+        #for i, usable in enumerate(is_s):
+            #if not usable:
+                #feat_list[i] = np.zeros((1, 512))
         return is_s, feat_list
 
     def insert_gallery(self, feat: ndarray, idx: int, label: int, usable=True) -> None:
+        if not usable:
+            feat = np.zeros_like(feat)
         self.gallery_list.append(feat)
         # feat = feat[np.newaxis, :]
         # faiss.normalize_L2(feat)
@@ -400,21 +404,26 @@ class PyFAT:
     def get_topk(self, query_feats: List[ndarray], usable: List[bool]) -> Tuple[List[ndarray], List[ndarray]]:
         query_feats = np.array(query_feats)
         faiss.normalize_L2(query_feats)
-        distances, indices = self.gpu_index.search(query_feats, 1)
+        distances_old, indices = self.gpu_index.search(query_feats, 11)
         indices = [[self.idx_map[i[0]]] for i in indices]
-        distances = [i for i in distances]
+        #distances = [i for i in distances]
+        #return indices, distances
+        distances = []
+        for dist in distances_old:
+            adjusted_distance = dist[0] - np.mean(dist[1:])
+            distances.append(adjusted_distance)
         return indices, distances
-        # TODO 返回的idx = self.idxmap[底库索引]
+        # TODO 找到最相近的11张人脸，距离用第一张的距离减去后十张距离的均值（尝试提升分数），已解决
 
     def feature_to_str(self, query_feats: List[ndarray]) -> List[dict]:
 
         feature_zq = [{"feature": ['TZSJ'], "quality": 'str'}]
         return feature_zq
 
-    def get_sim(self, feat1: ndarray, feat2: ndarray) -> float:
-        feat1 = feat1.flatten()
-        feat2 = feat2.flatten()
-        return np.dot(feat1, feat2) / (np.linalg.norm(feat1) * np.linalg.norm(feat2))
+    #def get_sim(self, feat1: ndarray, feat2: ndarray) -> float:
+        #feat1 = feat1.flatten()
+        #feat2 = feat2.flatten()
+        #return np.dot(feat1, feat2) / (np.linalg.norm(feat1) * np.linalg.norm(feat2))
 
     def _get_faces(self, image):
 
@@ -523,7 +532,10 @@ class PyFAT:
             if kpss is not None:
                 kpss = kpss[bindex, :]
 
+        if len(det) < 1:
+            return None
         """从检测到的多张脸中选择一张脸 """
+        # TODO det中可能一张人脸也没有，此时应该将特征直接置0，确定kpss不为空，否则建模失败(尝试解决建模失败问题）,已解决
         best_idx = select_face(det=det, img_shape=det_img.shape)
         img = norm_crop(image, kpss[best_idx])
 
@@ -567,19 +579,14 @@ if __name__ == '__main__':
 
     fat = PyFAT(6, 1)
     fat.load()
-    count = 550000
     time_pre = time.time()
     k_list, v_list = [], []
     for k, v in images_diku.items():
         k_list.append(k)
         v_list.append(v)
-        # break
-    while count > 0:
-        count -= 1
-        logger.info(count)
-        is_s, feats = fat.get_feature(v_list)
-        for idx, k in enumerate(k_list):
-            fat.insert_gallery(feats[idx], idx=int(k), label=0)
+    is_s, feats = fat.get_feature(v_list)
+    for idx, k in enumerate(k_list):
+        fat.insert_gallery(feats[idx], idx=int(k), label=0)
         # break
     fat.finalize()
 
