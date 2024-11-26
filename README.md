@@ -76,9 +76,9 @@ tar -cvf 1n1_ubuntu_cu12_<版本号>.tar ./
 | 66   | 80.4628% |
 
 # 横幅识别检测项目
-1.https://github.com/ArkadyBIG/BannerDetection.git
-2.https://github.com/iboraham/football-banner-detection-model.git
-3.https://github.com/bilawalHussain5646/Banner-Recognition-System.git
-4.https://github.com/JGPFlores/Real-time-color-detection-using-OpenCV-and-Python.git
-5.https://github.com/ying09/TextFuseNet.git
-6.https://github.com/clovaai/CRAFT-pytorch.git
+1. https://github.com/ArkadyBIG/BannerDetection.git
+2. https://github.com/iboraham/football-banner-detection-model.git
+3. https://github.com/bilawalHussain5646/Banner-Recognition-System.git
+4. https://github.com/JGPFlores/Real-time-color-detection-using-OpenCV-and-Python.git
+5. https://github.com/ying09/TextFuseNet.git
+6. https://github.com/clovaai/CRAFT-pytorch.git
