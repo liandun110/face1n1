@@ -250,11 +250,12 @@ class PyFAT:
         # self.gallery = faiss.IndexFlatIP(512)
         self.gallery_list = []
         self.index = 0
+        self.gallery_usable_list = []
 
     # 这段代码是PyFAT类中的load方法，它的作用是加载两个ONNX模型：一个检测模型和一个特征提取模型，并根据模型输出配置类的属性。
     def load(self, assets_path='./assets/', devices=[0]) -> int:
         assets_path = Path(assets_path)
-        rec_model_path = assets_path / '20241119_003521_ep19.onnx'
+        rec_model_path = assets_path / '0913_backbone_ep0000.onnx'
         det_model_path = assets_path / 'det_10g.onnx'
         try:
             providers = [
@@ -308,7 +309,7 @@ class PyFAT:
     def get_feature_parallel_num(self) -> Tuple[int, int]:
         logger.info('in get_feature_parallel_num')
         # return self.thread_num, 8
-        return 1, 8
+        return 1, 16
 
     def get_topk_parallel_num(self) -> Tuple[int, int]:
         logger.info('in get_topk_parallel_num')
@@ -382,6 +383,7 @@ class PyFAT:
         # for i, usable in enumerate(is_s):
         #     if not usable:
         #         feat_list[i] = np.zeros((512,))
+        self.gallery_usable_list.append(is_s)
         return is_s, feat_list
 
     def insert_gallery(self, feat: ndarray, idx: int, label: int, usable=True) -> None:
@@ -396,6 +398,7 @@ class PyFAT:
     def finalize(self) -> None:
         np_gallery = np.array(self.gallery_list)
         faiss.normalize_L2(np_gallery)
+        np_gallery[~np.array(self.gallery_usable_list[0]), :] = 0
         index = faiss.IndexFlatIP(512)
         res = faiss.StandardGpuResources()
         self.gpu_index = faiss.index_cpu_to_gpu(res, 0, index)
@@ -404,6 +407,10 @@ class PyFAT:
     def get_topk(self, query_feats: List[ndarray], usable: List[bool]) -> Tuple[List[ndarray], List[ndarray]]:
         query_feats = np.array(query_feats)
         faiss.normalize_L2(query_feats)
+
+        # 将某些特征置零
+        query_feats[~np.array(usable), :] = 0
+
         distances_old, indices = self.gpu_index.search(query_feats, 11)
         indices = [[self.idx_map[i[0]]] for i in indices]
         #distances = [i for i in distances]
