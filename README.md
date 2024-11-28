@@ -35,8 +35,7 @@ tar -cvf 1n1_ubuntu_cu12_<版本号>.tar ./
 
 # 2024视重通厂商得分
 
-## 人脸
-共 66 个结果。
+**人脸**：共 66 个结果
 | 排名 | 得分    |
 | :----: | :-------: |
 | 1   | 0.9215% |
@@ -75,5 +74,22 @@ tar -cvf 1n1_ubuntu_cu12_<版本号>.tar ./
 | 61   | 10.4991% |
 | 66   | 80.4628% |
 
+**车牌**：共36个结果
+| 排名 | 得分    |
+| :----: | :-------: |
+| 1   | 0.8666% |
+| 2   | 0.8748% |
+| 3   | 0.8899% |
+| 4   | 0.9267% |
+| 5   | 0.9719% |
+| 6   | 0.9754% |
+| 7   | 1.3290% |
+| 8   | 1.3297% |
+| 35   | 9.7101% |
+| 36   | 11.7405% |
 
+# 横幅识别检测项目
+1. https://github.com/ArkadyBIG/BannerDetection.git
+2. https://github.com/iboraham/football-banner-detection-model.git
+3. https://github.com/bilawalHussain5646/Banner-Recognition-System.git
 
