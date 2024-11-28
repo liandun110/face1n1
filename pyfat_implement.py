@@ -248,7 +248,8 @@ class PyFAT:
         # self.gallery = faiss.IndexFlatIP(512)
         self.gallery_list = []
         self.index = 0
-        self.gallery_usable_list = []
+        # self.gallery_usable_list = []
+        self.gallery_usable_dict = {}
 
     # 这段代码是PyFAT类中的load方法，它的作用是加载两个ONNX模型：一个检测模型和一个特征提取模型，并根据模型输出配置类的属性。
     def load(self, assets_path='./assets/', devices=[0]) -> int:
@@ -381,13 +382,12 @@ class PyFAT:
         # for i, usable in enumerate(is_s):
         #     if not usable:
         #         feat_list[i] = np.zeros((512,))
-        self.gallery_usable_list.append(is_s)
+        # self.gallery_usable_list += is_s
         return is_s, feat_list
 
     def insert_gallery(self, feat: ndarray, idx: int, label: int, usable=True) -> None:
-        if not usable:
-            feat = np.zeros_like(feat)
         self.gallery_list.append(feat)
+        self.gallery_usable_dict[idx] = usable
         # feat = feat[np.newaxis, :]
         # faiss.normalize_L2(feat)
         # self.gallery.add(feat)
@@ -396,7 +396,10 @@ class PyFAT:
     def finalize(self) -> None:
         np_gallery = np.array(self.gallery_list)
         faiss.normalize_L2(np_gallery)
-        np_gallery[~np.array(self.gallery_usable_list[0]), :] = 0
+        is_usable_list = []
+        for idx_map_item in self.idx_map:
+            is_usable_list.append(self.gallery_usable_dict[idx_map_item])
+        np_gallery[~np.array(is_usable_list), :] = 0
         index = faiss.IndexFlatIP(512)
         res = faiss.StandardGpuResources()
         self.gpu_index = faiss.index_cpu_to_gpu(res, 0, index)
@@ -586,10 +589,18 @@ if __name__ == '__main__':
     for k, v in images_diku.items():
         k_list.append(k)
         v_list.append(v)
+
     is_s, feats = fat.get_feature(v_list)
     for idx, k in enumerate(k_list):
-        fat.insert_gallery(feats[idx], idx=int(k), label=0)
-        # break
+        usable = is_s[idx]
+        fat.insert_gallery(feats[idx], idx=int(k), label=0, usable=usable)
+
+    # 模拟平台上的报错
+    is_s, feats = fat.get_feature(v_list)
+    for idx, k in enumerate(k_list):
+        usable = is_s[idx]
+        fat.insert_gallery(feats[idx], idx=int(k), label=0, usable=usable)
+
     fat.finalize()
 
     k_list, v_list = [], []
