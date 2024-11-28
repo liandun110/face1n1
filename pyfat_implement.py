@@ -100,8 +100,6 @@ def norm_crop(img, landmark, image_size=112, mode='arcface'):
     M, pose_index = estimate_norm(landmark, image_size, mode)
     warped = cv2.warpAffine(img, M, (image_size, image_size), borderValue=0.0)
     return warped
-
-
 # 调用 estimate_norm 函数来估计给定关键点的归一化变换矩阵 M 和姿势索引 pose_index。
 # 使用 cv2.warpAffine 函数将输入图像 img 通过变换矩阵 M 进行仿射变换，输出尺寸为 (image_size, image_size) 的图像。
 # 返回变换后的图像 warped
@@ -309,12 +307,12 @@ class PyFAT:
     def get_feature_parallel_num(self) -> Tuple[int, int]:
         logger.info('in get_feature_parallel_num')
         # return self.thread_num, 8
-        return 1, 16
+        return 1, 32
 
     def get_topk_parallel_num(self) -> Tuple[int, int]:
         logger.info('in get_topk_parallel_num')
         # return self.thread_num, 8  # 线程， batch
-        return 1, 16
+        return 1, 32
 
     def get_feature_len(self) -> int:
         logger.info('in get_feature_len')
@@ -407,10 +405,8 @@ class PyFAT:
     def get_topk(self, query_feats: List[ndarray], usable: List[bool]) -> Tuple[List[ndarray], List[ndarray]]:
         query_feats = np.array(query_feats)
         faiss.normalize_L2(query_feats)
-
         # 将某些特征置零
         query_feats[~np.array(usable), :] = 0
-
         distances_old, indices = self.gpu_index.search(query_feats, 11)
         indices = [[self.idx_map[i[0]]] for i in indices]
         #distances = [i for i in distances]
@@ -418,7 +414,7 @@ class PyFAT:
         distances = []
         for dist in distances_old:
             adjusted_distance = dist[0] - np.mean(dist[1:])
-            distances.append(adjusted_distance)
+            distances.append([adjusted_distance])
         return indices, distances
         # TODO 找到最相近的11张人脸，距离用第一张的距离减去后十张距离的均值（尝试提升分数），已解决
 
@@ -545,7 +541,6 @@ class PyFAT:
         # TODO det中可能一张人脸也没有，此时应该将特征直接置0，确定kpss不为空，否则建模失败(尝试解决建模失败问题）,已解决
         best_idx = select_face(det=det, img_shape=image.shape)
         img = norm_crop(image, kpss[best_idx])
-
         return img
 
     def nms(self, dets):
@@ -604,4 +599,4 @@ if __name__ == '__main__':
     is_s, feats = fat.get_feature(v_list)
     idxs, sims = fat.get_topk(feats, is_s)
     for index, k in enumerate(k_list):
-        print(f'探测: {k}, 检索到底库图片idx: {idxs[index]}, 相似度: {sims[index]}')
+        print(f'探测: {k}, 检索到底库图片idx: {idxs[index]}, 相似度: {sims[index][0]}')
