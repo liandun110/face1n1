@@ -2,3 +2,5 @@
 *.onnx
 !assets/det_10g.onnx
 *.whl
+*.so.9
+

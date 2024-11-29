@@ -254,7 +254,7 @@ class PyFAT:
     # 这段代码是PyFAT类中的load方法，它的作用是加载两个ONNX模型：一个检测模型和一个特征提取模型，并根据模型输出配置类的属性。
     def load(self, assets_path='./assets/', devices=[0]) -> int:
         assets_path = Path(assets_path)
-        rec_model_path = assets_path / '0913_backbone_ep0000.onnx'
+        rec_model_path = assets_path / '20241119_003521_ep19.onnx'
         det_model_path = assets_path / 'det_10g.onnx'
         try:
             providers = [
