@@ -18,15 +18,15 @@ face1n1/
 ```bash
 conda create -n face1n1 python=3.10.12
 conda activate face1n1
-cd tools/
-bash env_config.sh
-cd ..
+pip install -r requirements.txt
 python pyfat_implement.py
-tar -cvf 1n1_ubuntu_cu12_<版本号>.tar ./
 ```
 
 # 测评流程
 1. 打为 tar 包
+```bash
+tar -cvf 1n1_ubuntu_cu12_<版本号>.tar ./
+```
 2. 将 tar 包拷贝到公安网U盘，密码是 `111111`。
 3. 将公安网U盘中的tar包拷贝到公安网机器上
 4. 利用 filezilla 软件将公安网机器上的tar包拷贝到云平台上：Host=11.33.4.180 Username=myftp Password=myftp
